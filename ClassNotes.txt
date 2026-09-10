@@ -1,0 +1,33 @@
+ADO.Net Core:
+Backend Application		:	Where we can maintain the data 	=> 	SQL Server(DBMS)
+Frontend Application	:	Where Enduser can interact 		=>	.Net App, Java App, Angular App, React JS etc.
+		- Client Side Aplication
+			- HTML, CSS, Javascript, Angular, React, Express JS etc.
+		- Server Side Application
+			- .Net(ASP.Net Core, Web API, MicroServices), Java(Spring Boot, JSP, API, Microservice), Phython etc.
+Middleware				:	These are used to provide the access to frontend and backend applications.
+		- ADO.Net Core		=>	ORM(Object Relational Mapping)	=>	Entity Framework Core, Dapper		
+			
+Console App(C#.Net) 		<=  ADO.Net Core  =>			SqlServer(T-SQL)
+
+- ADO.Net Core is available in a library format.
+- It is a collection of classes, by using these classes we can connect with DB and perform the CRUD operations
+- By using ADO.Net Core we are able to connect with DB in two ways
+	- Connection Oriented Architecture (Live)
+		- Classes:	SqlConnection, SqlCommand, SqlDataReader etc.
+		- Stays to open the connection while reading/performing the operation.
+		- Fast forward only, it reads only single record at a time.		
+		Steps:
+		- Prepare the connection 
+		- Prepare and send the query along with connection object
+		- Open the connection		
+		- Execute the Query
+			- ExecuteNonQuery()	:	Action Queries (Insert/Update/Delete) - int
+			- ExecuteReader()	:	Non-Action Query (Read) - SqlDataReader
+			- ExecuteScalar()	:	Non-Action Query with agregate function result - object
+		- Close the connection
+		
+	- Disconnection Oriented Architecture (Cached)
+		- Classes: SqlDataAdapter, DataSet/DataTable etc.
+		- Opens, fills data and closes the connection.
+		- Working with data offline, binding to grids and batch updates.
