@@ -19,7 +19,7 @@ Console App(C#.Net) 		<=  ADO.Net Core  =>			SqlServer(T-SQL)
 		- Fast forward only, it reads only single record at a time.		
 		Steps:
 		- Prepare the connection 
-		- Prepare and send the query along with connection object
+		- Prepare and send the query along with connection object (SqlCommand)
 		- Open the connection		
 		- Execute the Query
 			- ExecuteNonQuery()	:	Action Queries (Insert/Update/Delete) - int
@@ -31,3 +31,44 @@ Console App(C#.Net) 		<=  ADO.Net Core  =>			SqlServer(T-SQL)
 		- Classes: SqlDataAdapter, DataSet/DataTable etc.
 		- Opens, fills data and closes the connection.
 		- Working with data offline, binding to grids and batch updates.
+		Steps:
+		- Prepare the connection 
+		- Prepare and send the select query along with connection object (SqlDataAdapter) 
+		- Prepare the Dataset/Table at frontend.
+		- Fill the Data
+		- Perform the operations
+		- Update all data back to server.
+		Note: A Dataset is a collection of DataTables, and a DataTable is a collection of DataRow.
+
+Stored procedure:
+CREATE PROCEDURE sp_InsertEmployee
+    @Eno INT, @Ename VARCHAR(50), @Job VARCHAR(50), @Salary DECIMAL(10,2), @Dname VARCHAR(50)
+AS
+BEGIN
+    INSERT INTO Employee (Eno, Ename, Job, Salary, Dname) VALUES (@Eno, @Ename, @Job, @Salary, @Dname)
+END
+GO
+
+CREATE PROCEDURE sp_UpdateEmployee
+    @Eno INT, @Job VARCHAR(50), @Salary DECIMAL(10,2)
+AS
+BEGIN
+    UPDATE Employee SET Job = @Job, Salary = @Salary WHERE Eno = @Eno
+END
+GO
+
+CREATE PROCEDURE sp_DeleteEmployee
+    @Eno INT
+AS
+BEGIN
+    DELETE FROM Employee WHERE Eno = @Eno
+END
+GO
+
+CREATE PROCEDURE sp_GetEmployeeByEno
+    @Eno INT
+AS
+BEGIN
+    SELECT Eno, Ename, Job, Salary, Dname FROM Employee WHERE Eno = @Eno
+END
+GO

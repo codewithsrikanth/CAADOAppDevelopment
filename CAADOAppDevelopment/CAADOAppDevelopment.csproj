@@ -4,8 +4,8 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <StartupObject>CAADOAppDevelopment.Example3</StartupObject>
+    <Nullable>disable</Nullable>
+    <StartupObject>CAADOAppDevelopment.Example5</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>
