@@ -5,7 +5,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
-    <StartupObject>CAADOAppDevelopment.Example5</StartupObject>
+    <StartupObject>CAADOAppDevelopment.BankApp</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>

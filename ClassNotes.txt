@@ -19,7 +19,7 @@ Console App(C#.Net) 		<=  ADO.Net Core  =>			SqlServer(T-SQL)
 		- Fast forward only, it reads only single record at a time.		
 		Steps:
 		- Prepare the connection 
-		- Prepare and send the query along with connection object (SqlCommand)
+		- Prepare and send the query/stored procedure along with connection object (SqlCommand)
 		- Open the connection		
 		- Execute the Query
 			- ExecuteNonQuery()	:	Action Queries (Insert/Update/Delete) - int
@@ -72,3 +72,242 @@ BEGIN
     SELECT Eno, Ename, Job, Salary, Dname FROM Employee WHERE Eno = @Eno
 END
 GO
+
+------------
+Sample Project on ADO.Net + SQL Server and C#.Net
+
+-- ============================================================
+-- BANK ACCOUNT MANAGEMENT SYSTEM - Database Schema
+-- ============================================================
+
+CREATE DATABASE BankDB;
+GO
+USE BankDB;
+GO
+
+-- ------------------------------------------------------------
+-- TABLE: Accounts
+-- ------------------------------------------------------------
+CREATE TABLE Accounts
+(
+    AccNo         INT IDENTITY(1001,1) PRIMARY KEY,
+    CustomerName  VARCHAR(100) NOT NULL,
+    AccType       VARCHAR(20)  NOT NULL,   -- Savings / Current
+    Balance       DECIMAL(12,2) NOT NULL DEFAULT 0,
+    CreatedOn     DATETIME DEFAULT GETDATE()
+);
+GO
+
+-- ------------------------------------------------------------
+-- TABLE: TransactionLog
+-- ------------------------------------------------------------
+CREATE TABLE TransactionLog
+(
+    TransId    INT IDENTITY(1,1) PRIMARY KEY,
+    AccNo      INT NOT NULL FOREIGN KEY REFERENCES Accounts(AccNo),
+    TransType  VARCHAR(20) NOT NULL,       -- Deposit / Withdraw / Transfer-Out / Transfer-In
+    Amount     DECIMAL(12,2) NOT NULL,
+    TransDate  DATETIME DEFAULT GETDATE()
+);
+GO
+
+-- ============================================================
+-- STORED PROCEDURE: sp_CreateAccount
+-- Inserts a new account, returns the generated AccNo via OUTPUT
+-- ============================================================
+CREATE PROCEDURE sp_CreateAccount
+    @CustomerName VARCHAR(100),
+    @AccType      VARCHAR(20),
+    @Balance      DECIMAL(12,2),
+    @NewAccNo     INT OUTPUT
+AS
+BEGIN
+    INSERT INTO Accounts (CustomerName, AccType, Balance)
+    VALUES (@CustomerName, @AccType, @Balance);
+
+    SET @NewAccNo = SCOPE_IDENTITY();
+END
+GO
+
+-- ============================================================
+-- STORED PROCEDURE: sp_Deposit
+-- Adds amount to balance + logs the transaction
+-- ============================================================
+CREATE PROCEDURE sp_Deposit
+    @AccNo  INT,
+    @Amount DECIMAL(12,2)
+AS
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM Accounts WHERE AccNo = @AccNo)
+    BEGIN
+        RAISERROR('Account not found.', 16, 1);
+        RETURN;
+    END
+
+    UPDATE Accounts SET Balance = Balance + @Amount WHERE AccNo = @AccNo;
+    INSERT INTO TransactionLog (AccNo, TransType, Amount) VALUES (@AccNo, 'Deposit', @Amount);
+END
+GO
+
+-- ============================================================
+-- STORED PROCEDURE: sp_Withdraw
+-- Deducts amount only if sufficient balance exists
+-- ============================================================
+CREATE PROCEDURE sp_Withdraw
+    @AccNo  INT,
+    @Amount DECIMAL(12,2)
+AS
+BEGIN
+    DECLARE @CurrentBalance DECIMAL(12,2);
+
+    SELECT @CurrentBalance = Balance FROM Accounts WHERE AccNo = @AccNo;
+
+    IF @CurrentBalance IS NULL
+    BEGIN
+        RAISERROR('Account not found.', 16, 1);
+        RETURN;
+    END
+
+    IF @CurrentBalance < @Amount
+    BEGIN
+        RAISERROR('Insufficient balance.', 16, 1);
+        RETURN;
+    END
+
+    UPDATE Accounts SET Balance = Balance - @Amount WHERE AccNo = @AccNo;
+    INSERT INTO TransactionLog (AccNo, TransType, Amount) VALUES (@AccNo, 'Withdraw', @Amount);
+END
+GO
+
+-- ============================================================
+-- STORED PROCEDURE: sp_TransferAmount
+-- Transfers between two accounts inside a SQL transaction
+-- (rolls back both updates if anything fails midway)
+-- ============================================================
+CREATE PROCEDURE sp_TransferAmount
+    @FromAccNo INT,
+    @ToAccNo   INT,
+    @Amount    DECIMAL(12,2)
+AS
+BEGIN
+    BEGIN TRANSACTION;
+
+    BEGIN TRY
+        DECLARE @FromBalance DECIMAL(12,2);
+        SELECT @FromBalance = Balance FROM Accounts WHERE AccNo = @FromAccNo;
+
+        IF @FromBalance IS NULL
+            THROW 50001, 'Source account not found.', 1;
+
+        IF @FromBalance < @Amount
+            THROW 50002, 'Insufficient balance in source account.', 1;
+
+        IF NOT EXISTS (SELECT 1 FROM Accounts WHERE AccNo = @ToAccNo)
+            THROW 50003, 'Destination account not found.', 1;
+
+        UPDATE Accounts SET Balance = Balance - @Amount WHERE AccNo = @FromAccNo;
+        UPDATE Accounts SET Balance = Balance + @Amount WHERE AccNo = @ToAccNo;
+
+        INSERT INTO TransactionLog (AccNo, TransType, Amount) VALUES (@FromAccNo, 'Transfer-Out', @Amount);
+        INSERT INTO TransactionLog (AccNo, TransType, Amount) VALUES (@ToAccNo, 'Transfer-In', @Amount);
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;   -- re-throws the original error to the caller (ADO.NET will catch it as SqlException)
+    END CATCH
+END
+GO
+
+-- ============================================================
+-- STORED PROCEDURE: sp_GetBalance
+-- Returns balance via OUTPUT parameter (no result set)
+-- ============================================================
+CREATE PROCEDURE sp_GetBalance
+    @AccNo   INT,
+    @Balance DECIMAL(12,2) OUTPUT
+AS
+BEGIN
+    SELECT @Balance = Balance FROM Accounts WHERE AccNo = @AccNo;
+END
+GO
+
+-- ============================================================
+-- STORED PROCEDURE: sp_GetAccountByNo
+-- ============================================================
+CREATE PROCEDURE sp_GetAccountByNo
+    @AccNo INT
+AS
+BEGIN
+    SELECT AccNo, CustomerName, AccType, Balance, CreatedOn
+    FROM Accounts
+    WHERE AccNo = @AccNo;
+END
+GO
+
+-- ============================================================
+-- STORED PROCEDURE: sp_GetAllAccounts
+-- ============================================================
+CREATE PROCEDURE sp_GetAllAccounts
+AS
+BEGIN
+    SELECT AccNo, CustomerName, AccType, Balance, CreatedOn FROM Accounts;
+END
+GO
+
+-- ============================================================
+-- STORED PROCEDURE: sp_GetTransactionHistory
+-- ============================================================
+CREATE PROCEDURE sp_GetTransactionHistory
+    @AccNo INT
+AS
+BEGIN
+    SELECT TransId, AccNo, TransType, Amount, TransDate
+    FROM TransactionLog
+    WHERE AccNo = @AccNo
+    ORDER BY TransDate DESC;
+END
+GO
+
+Sample Test Data:
+INSERT INTO Accounts (CustomerName, AccType, Balance) VALUES
+('Srikanth Rallabandi', 'Savings', 55000.00),
+('Ramesh Kumar',        'Current', 125000.00),
+('Govind Rao',          'Savings', 8000.00),
+('Krishanth Reddy',     'Savings', 32000.50),
+('Haritha Sharma',      'Current', 76500.00);
+GO
+
+INSERT INTO TransactionLog (AccNo, TransType, Amount, TransDate) VALUES
+(1001, 'Deposit',      20000.00, '2026-08-01 10:15:00'),
+(1001, 'Withdraw',      5000.00, '2026-08-10 14:30:00'),
+(1002, 'Deposit',     100000.00, '2026-08-02 09:00:00'),
+(1002, 'Transfer-Out',  15000.00, '2026-08-15 11:45:00'),
+(1005, 'Transfer-In',   15000.00, '2026-08-15 11:45:00'),
+(1003, 'Deposit',       8000.00, '2026-08-05 16:20:00'),
+(1004, 'Deposit',      32000.50, '2026-08-06 12:00:00'),
+(1005, 'Deposit',      61500.00, '2026-08-07 13:10:00');
+GO
+
+SELECT * FROM Accounts;
+SELECT * FROM TransactionLog ORDER BY TransDate;
+
+----------------------------------------------------------------
+Presenation Layer (PL/UI): Take the input and display the output(Console, WinForms, Web, Web API or any UI)
+Businuss Logic Layer(BLL) - Validations, Businuss Rules, Calculations, Decisions
+Data Access Layer(DAL) - Talks to the database only
+
+Advantages:
+- Seperation Of Concerns 
+- Maintainability
+- Reuability
+- Testability
+- Technology Indepdent
+- Security
+- Team Scalability
+
+
+
+
+
