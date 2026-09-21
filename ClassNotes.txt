@@ -294,9 +294,9 @@ SELECT * FROM Accounts;
 SELECT * FROM TransactionLog ORDER BY TransDate;
 
 ----------------------------------------------------------------
-Presenation Layer (PL/UI): Take the input and display the output(Console, WinForms, Web, Web API or any UI)
+Presenation Layer (PL/UI): Take the input and display the output(Console, WinForms, Web or any UI)
 Businuss Logic Layer(BLL) - Validations, Businuss Rules, Calculations, Decisions
-Data Access Layer(DAL) - Talks to the database only
+Data Access Layer(DAL) - Talks to the database/data source only
 
 Advantages:
 - Seperation Of Concerns 

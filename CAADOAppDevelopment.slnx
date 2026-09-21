@@ -3,4 +3,7 @@
     <File Path="ClassNotes.txt" />
   </Folder>
   <Project Path="CAADOAppDevelopment/CAADOAppDevelopment.csproj" />
+  <Project Path="CABankPL/CABankPL.csproj" Id="7939241b-6a37-4b69-a732-8842c5ed20be" />
+  <Project Path="ClibBankBLL/ClibBankBLL.csproj" Id="1fac9e21-957b-40e1-a47b-f8aa530aff51" />
+  <Project Path="ClibBankDAL/ClibBankDAL.csproj" Id="782481f8-bf77-4466-be2a-ebb967dd7b99" />
 </Solution>
